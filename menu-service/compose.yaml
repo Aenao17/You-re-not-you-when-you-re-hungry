@@ -1,0 +1,27 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: menu-service-database
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: menu_db
+      POSTGRES_USER: menu
+      POSTGRES_PASSWORD: password
+    volumes:
+      - menu_postgres_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: menu-service-app
+    ports:
+      - "8082:8082"
+    depends_on:
+      - postgres
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/menu_db
+      SPRING_DATASOURCE_USERNAME: menu
+      SPRING_DATASOURCE_PASSWORD: password
+
+volumes:
+  menu_postgres_data:

@@ -1,0 +1,27 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: user-service-database
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: user_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - user_postgres_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: user-service-app
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/user_db
+      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_PASSWORD: password
+
+volumes:
+  user_postgres_data:

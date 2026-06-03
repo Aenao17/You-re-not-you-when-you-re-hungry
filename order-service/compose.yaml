@@ -1,0 +1,27 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: order-service-database
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_DB: order_db
+      POSTGRES_USER: order_user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - order_postgres_data:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: order-service-app
+    ports:
+      - "8083:8083"
+    depends_on:
+      - postgres
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/order_db
+      SPRING_DATASOURCE_USERNAME: order_user
+      SPRING_DATASOURCE_PASSWORD: password
+
+volumes:
+  order_postgres_data:
