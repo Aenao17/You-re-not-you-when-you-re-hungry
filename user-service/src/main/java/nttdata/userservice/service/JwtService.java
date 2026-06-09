@@ -4,12 +4,16 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import nttdata.userservice.model.User;
+import nttdata.userservice.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import io.jsonwebtoken.Jwts;
@@ -18,8 +22,18 @@ import io.jsonwebtoken.Jwts;
 public class JwtService {
     public static final String SECRET = "5367566859703373367639792F423F452848284D6251655468576D5A71347437";
 
+    @Autowired
+    private UserRepository userRepository;
+
     public String generateToken(String username) {
         Map<String, Object> claims = new HashMap<>();
+        // MODIFICARE: Punem rolul in claims pentru a-l putea extrage ulterior
+        User user = userRepository.findByUsername(username).orElse(null);
+        if (user != null) {
+            // Spring Security se asteapta ca rolurile sa aiba prefixul ROLE_
+            claims.put("roles", List.of("ROLE_" + user.getRole().name()));
+        }
+
         return createToken(claims, username);
     }
 
