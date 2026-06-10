@@ -95,7 +95,7 @@ class OrderServiceImplTest {
         OrderResponse response = orderService.createOrder("customer@test.com", request);
 
         assertThat(response.getId()).isEqualTo(100L);
-        assertThat(response.getUserEmail()).isEqualTo("customer@test.com");
+        assertThat(response.getUsername()).isEqualTo("customer@test.com");
         assertThat(response.getRestaurantId()).isEqualTo(1L);
         assertThat(response.getRestaurantName()).isEqualTo("Demo Restaurant");
         assertThat(response.getStatus()).isEqualTo(OrderStatus.CREATED);
@@ -129,7 +129,7 @@ class OrderServiceImplTest {
 
         Order savedOrder = orderCaptor.getValue();
 
-        assertThat(savedOrder.getUserEmail()).isEqualTo("customer@test.com");
+        assertThat(savedOrder.getUsername()).isEqualTo("customer@test.com");
         assertThat(savedOrder.getRestaurantId()).isEqualTo(1L);
         assertThat(savedOrder.getRestaurantName()).isEqualTo("Demo Restaurant");
         assertThat(savedOrder.getTotalPrice()).isEqualByComparingTo("71.00");
@@ -192,15 +192,15 @@ class OrderServiceImplTest {
     void getMyOrders_shouldReturnOnlyOrdersForCurrentUser() {
         Order order = createOrderEntity(1L, "customer@test.com", OrderStatus.CREATED);
 
-        when(orderRepository.findByUserEmailOrderByCreatedAtDesc("customer@test.com"))
+        when(orderRepository.findByUsernameOrderByCreatedAtDesc("customer@test.com"))
                 .thenReturn(List.of(order));
 
         List<OrderResponse> result = orderService.getMyOrders("customer@test.com");
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getUserEmail()).isEqualTo("customer@test.com");
+        assertThat(result.get(0).getUsername()).isEqualTo("customer@test.com");
 
-        verify(orderRepository).findByUserEmailOrderByCreatedAtDesc("customer@test.com");
+        verify(orderRepository).findByUsernameOrderByCreatedAtDesc("customer@test.com");
     }
 
     @Test
@@ -212,7 +212,7 @@ class OrderServiceImplTest {
         OrderResponse response = orderService.getOrderById(1L, "customer@test.com", false);
 
         assertThat(response.getId()).isEqualTo(1L);
-        assertThat(response.getUserEmail()).isEqualTo("customer@test.com");
+        assertThat(response.getUsername()).isEqualTo("customer@test.com");
     }
 
     @Test
@@ -235,7 +235,7 @@ class OrderServiceImplTest {
         OrderResponse response = orderService.getOrderById(1L, "admin@test.com", true);
 
         assertThat(response.getId()).isEqualTo(1L);
-        assertThat(response.getUserEmail()).isEqualTo("owner@test.com");
+        assertThat(response.getUsername()).isEqualTo("owner@test.com");
     }
 
     @Test
@@ -295,10 +295,10 @@ class OrderServiceImplTest {
                 .hasMessageContaining("Completed orders cannot be cancelled");
     }
 
-    private Order createOrderEntity(Long id, String userEmail, OrderStatus status) {
+    private Order createOrderEntity(Long id, String username, OrderStatus status) {
         Order order = Order.builder()
                 .id(id)
-                .userEmail(userEmail)
+                .username(username)
                 .restaurantId(1L)
                 .restaurantName("Demo Restaurant")
                 .status(status)
