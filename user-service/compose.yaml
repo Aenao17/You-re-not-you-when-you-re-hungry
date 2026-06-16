@@ -22,6 +22,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/user_db
       SPRING_DATASOURCE_USERNAME: user
       SPRING_DATASOURCE_PASSWORD: password
+      JWT_SECRET: 5367566859703373367639792F423F452848284D6251655468576D5A71347437
 
 volumes:
   user_postgres_data:

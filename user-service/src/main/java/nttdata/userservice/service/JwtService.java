@@ -7,6 +7,7 @@ import io.jsonwebtoken.security.Keys;
 import nttdata.userservice.model.User;
 import nttdata.userservice.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
@@ -20,8 +21,8 @@ import io.jsonwebtoken.Jwts;
 
 @Component
 public class JwtService {
-    public static final String SECRET = "5367566859703373367639792F423F452848284D6251655468576D5A71347437";
-
+    @Value("${JWT_SECRET}")
+    public String secret;
     @Autowired
     private UserRepository userRepository;
 
@@ -47,7 +48,7 @@ public class JwtService {
                 .compact();
     }
     private Key getSignKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(SECRET);
+        byte[] keyBytes = Decoders.BASE64.decode(secret);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 

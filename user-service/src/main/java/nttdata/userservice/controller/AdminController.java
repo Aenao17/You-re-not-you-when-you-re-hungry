@@ -25,7 +25,7 @@ public class AdminController {
         );
     }
 
-    @GetMapping("/users/{username}")
+    @GetMapping("/users/username/{username}")
     public ResponseEntity<UserDto> getUserByUsername(@PathVariable String username) {
         return ResponseEntity.ok(
                 userService.getUserByUsername(username)
