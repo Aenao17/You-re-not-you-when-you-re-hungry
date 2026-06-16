@@ -28,6 +28,7 @@ public class OrderController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Order created successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid request body or invalid menu item"),
+            @ApiResponse(responseCode = "404", description = "User or restaurant not found"),
             @ApiResponse(responseCode = "401", description = "Missing or invalid JWT token"),
             @ApiResponse(responseCode = "403", description = "User does not have CUSTOMER role"),
             @ApiResponse(responseCode = "500", description = "Unexpected server error")

@@ -5,9 +5,12 @@ import nttdata.userservice.model.Role;
 import nttdata.userservice.model.User;
 import nttdata.userservice.repository.UserRepository;
 import nttdata.userservice.utils.dtos.UserDto;
+import nttdata.userservice.utils.dtos.UserSummaryDto;
 import nttdata.userservice.utils.mappers.UserMapper;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -54,6 +57,21 @@ public class UserServiceImpl {
             throw new NoSuchElementException(User.class.getSimpleName() + " with username " + username + " was not found");
         }
         return UserMapper.toUserDto(user);
+    }
+
+    public UserSummaryDto getUserSummaryByUsername(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        User.class.getSimpleName() + " with username " + username + " was not found"
+                ));
+
+        return new UserSummaryDto(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getRole().name()
+        );
     }
 
     public List<UserDto> getAllUsers() {

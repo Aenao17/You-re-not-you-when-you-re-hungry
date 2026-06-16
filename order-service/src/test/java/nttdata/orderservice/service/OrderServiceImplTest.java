@@ -1,8 +1,10 @@
 package nttdata.orderservice.service;
 
 import nttdata.orderservice.client.MenuClient;
+import nttdata.orderservice.client.UserClient;
 import nttdata.orderservice.dto.external.MenuItemResponse;
 import nttdata.orderservice.dto.external.RestaurantResponse;
+import nttdata.orderservice.dto.external.UserResponse;
 import nttdata.orderservice.dto.request.CreateOrderItemRequest;
 import nttdata.orderservice.dto.request.CreateOrderRequest;
 import nttdata.orderservice.dto.response.OrderResponse;
@@ -40,13 +42,19 @@ class OrderServiceImplTest {
     @Mock
     private MenuClient menuClient;
 
+    @Mock
+    private UserClient userClient;
+
     @InjectMocks
     private OrderServiceImpl orderService;
 
     private RestaurantResponse restaurant;
+    private UserResponse customer;
 
     @BeforeEach
     void setUp() {
+        customer = new UserResponse(42L, "customer@test.com", "customer@test.com", "CUSTOMER");
+
         restaurant = new RestaurantResponse(
                 1L,
                 "Demo Restaurant",
@@ -74,6 +82,7 @@ class OrderServiceImplTest {
                 ))
                 .build();
 
+        when(userClient.getUserByUsername("customer@test.com")).thenReturn(customer);
         when(menuClient.getRestaurantById(1L)).thenReturn(restaurant);
 
         when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
@@ -95,6 +104,7 @@ class OrderServiceImplTest {
         OrderResponse response = orderService.createOrder("customer@test.com", request);
 
         assertThat(response.getId()).isEqualTo(100L);
+        assertThat(response.getUserId()).isEqualTo(42L);
         assertThat(response.getUsername()).isEqualTo("customer@test.com");
         assertThat(response.getRestaurantId()).isEqualTo(1L);
         assertThat(response.getRestaurantName()).isEqualTo("Demo Restaurant");
@@ -103,6 +113,7 @@ class OrderServiceImplTest {
 
         assertThat(response.getTotalPrice()).isEqualByComparingTo("113.00");
 
+        verify(userClient).getUserByUsername("customer@test.com");
         verify(menuClient).getRestaurantById(1L);
         verify(orderRepository).save(any(Order.class));
     }
@@ -119,6 +130,7 @@ class OrderServiceImplTest {
                 ))
                 .build();
 
+        when(userClient.getUserByUsername("customer@test.com")).thenReturn(customer);
         when(menuClient.getRestaurantById(1L)).thenReturn(restaurant);
         when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -129,6 +141,7 @@ class OrderServiceImplTest {
 
         Order savedOrder = orderCaptor.getValue();
 
+        assertThat(savedOrder.getUserId()).isEqualTo(42L);
         assertThat(savedOrder.getUsername()).isEqualTo("customer@test.com");
         assertThat(savedOrder.getRestaurantId()).isEqualTo(1L);
         assertThat(savedOrder.getRestaurantName()).isEqualTo("Demo Restaurant");
@@ -158,12 +171,35 @@ class OrderServiceImplTest {
                 ))
                 .build();
 
+        when(userClient.getUserByUsername("customer@test.com")).thenReturn(customer);
         when(menuClient.getRestaurantById(1L)).thenReturn(restaurant);
 
         assertThatThrownBy(() -> orderService.createOrder("customer@test.com", request))
                 .isInstanceOf(BadRequestException.class)
                 .hasMessageContaining("does not belong to restaurant");
 
+        verify(orderRepository, never()).save(any(Order.class));
+    }
+
+    @Test
+    void createOrder_shouldThrowResourceNotFoundWhenUserIsNull() {
+        CreateOrderRequest request = CreateOrderRequest.builder()
+                .restaurantId(1L)
+                .items(List.of(
+                        CreateOrderItemRequest.builder()
+                                .menuItemId(10L)
+                                .quantity(1)
+                                .build()
+                ))
+                .build();
+
+        when(userClient.getUserByUsername("unknown@test.com")).thenReturn(null);
+
+        assertThatThrownBy(() -> orderService.createOrder("unknown@test.com", request))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("User not found");
+
+        verify(menuClient, never()).getRestaurantById(any());
         verify(orderRepository, never()).save(any(Order.class));
     }
 
@@ -179,6 +215,7 @@ class OrderServiceImplTest {
                 ))
                 .build();
 
+        when(userClient.getUserByUsername("customer@test.com")).thenReturn(customer);
         when(menuClient.getRestaurantById(99L)).thenReturn(null);
 
         assertThatThrownBy(() -> orderService.createOrder("customer@test.com", request))
@@ -298,6 +335,7 @@ class OrderServiceImplTest {
     private Order createOrderEntity(Long id, String username, OrderStatus status) {
         Order order = Order.builder()
                 .id(id)
+                .userId(42L)
                 .username(username)
                 .restaurantId(1L)
                 .restaurantName("Demo Restaurant")

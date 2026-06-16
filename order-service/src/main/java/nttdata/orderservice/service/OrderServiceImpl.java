@@ -2,8 +2,10 @@ package nttdata.orderservice.service;
 
 import lombok.RequiredArgsConstructor;
 import nttdata.orderservice.client.MenuClient;
+import nttdata.orderservice.client.UserClient;
 import nttdata.orderservice.dto.external.MenuItemResponse;
 import nttdata.orderservice.dto.external.RestaurantResponse;
+import nttdata.orderservice.dto.external.UserResponse;
 import nttdata.orderservice.dto.request.CreateOrderItemRequest;
 import nttdata.orderservice.dto.request.CreateOrderRequest;
 import nttdata.orderservice.dto.response.OrderItemResponse;
@@ -28,9 +30,16 @@ public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository orderRepository;
     private final MenuClient menuClient;
+    private final UserClient userClient;
 
     @Override
     public OrderResponse createOrder(String username, CreateOrderRequest request) {
+        UserResponse user = userClient.getUserByUsername(username);
+
+        if (user == null) {
+            throw new ResourceNotFoundException("User not found with username: " + username);
+        }
+
         RestaurantResponse restaurant = menuClient.getRestaurantById(request.getRestaurantId());
 
         if (restaurant == null) {
@@ -38,7 +47,8 @@ public class OrderServiceImpl implements OrderService {
         }
 
         Order order = Order.builder()
-                .username(username)
+                .userId(user.id())
+                .username(user.username())
                 .restaurantId(restaurant.restaurantId())
                 .restaurantName(restaurant.name())
                 .status(OrderStatus.CREATED)
@@ -204,6 +214,7 @@ public class OrderServiceImpl implements OrderService {
 
         return OrderResponse.builder()
                 .id(order.getId())
+                .userId(order.getUserId())
                 .username(order.getUsername())
                 .restaurantId(order.getRestaurantId())
                 .restaurantName(order.getRestaurantName())
