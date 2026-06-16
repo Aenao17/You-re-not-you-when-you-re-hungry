@@ -1,4 +1,4 @@
-package nttdata.userservice.controller;
+    package nttdata.userservice.controller;
 
 import lombok.RequiredArgsConstructor;
 import nttdata.userservice.service.JwtService;
