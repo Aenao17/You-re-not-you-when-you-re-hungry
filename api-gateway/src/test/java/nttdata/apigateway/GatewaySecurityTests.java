@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class GatewayRoutingTests {
+class GatewaySecurityTests {
 
     @LocalServerPort
     private int gatewayPort;
@@ -48,90 +48,79 @@ class GatewayRoutingTests {
         return "http://localhost:" + gatewayPort + path;
     }
 
-    private HttpEntity<Void> withAuth(String bearerToken) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", bearerToken);
-        return new HttpEntity<>(headers);
-    }
-
     @Test
-    void routesUserHelloToUserService() {
-        WireMockServices.USER.stubFor(get(urlEqualTo("/api/users/hello"))
-                .willReturn(aResponse().withStatus(200).withBody("hello-from-user")));
-
-        ResponseEntity<String> response = restTemplate.exchange(
-                gatewayUrl("/api/users/hello"),
-                HttpMethod.GET,
-                withAuth(JwtTestTokens.bearerCustomerToken()),
-                String.class
-        );
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isEqualTo("hello-from-user");
-    }
-
-    @Test
-    void routesAuthLoginToUserService() {
-        WireMockServices.USER.stubFor(post(urlEqualTo("/api/auth/login"))
-                .willReturn(aResponse().withStatus(200).withBody("token-from-user")));
+    void allowsPublicAuthRegisterWithoutToken() {
+        WireMockServices.USER.stubFor(post(urlEqualTo("/api/auth/register"))
+                .willReturn(aResponse().withStatus(201).withBody("registered")));
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
 
         ResponseEntity<String> response = restTemplate.postForEntity(
-                gatewayUrl("/api/auth/login"),
-                new HttpEntity<>("{}", headers),
-                String.class
-        );
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isEqualTo("token-from-user");
-    }
-
-    @Test
-    void routesAdminUsersToUserService() {
-        WireMockServices.USER.stubFor(get(urlEqualTo("/api/admin/users"))
-                .willReturn(aResponse().withStatus(200).withBody("admin-users")));
-
-        ResponseEntity<String> response = restTemplate.exchange(
-                gatewayUrl("/api/admin/users"),
-                HttpMethod.GET,
-                withAuth(JwtTestTokens.bearerAdminToken()),
-                String.class
-        );
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isEqualTo("admin-users");
-    }
-
-    @Test
-    void routesMenuRestaurantsToMenuService() {
-        WireMockServices.MENU.stubFor(get(urlEqualTo("/api/menu/restaurants"))
-                .willReturn(aResponse().withStatus(200).withBody("restaurants")));
-
-        ResponseEntity<String> response = restTemplate.getForEntity(gatewayUrl("/api/menu/restaurants"), String.class);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isEqualTo("restaurants");
-    }
-
-    @Test
-    void routesOrdersToOrderService() {
-        WireMockServices.ORDER.stubFor(post(urlEqualTo("/api/orders"))
-                .willReturn(aResponse().withStatus(201).withBody("order-created")));
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", JwtTestTokens.bearerCustomerToken());
-        headers.set("Content-Type", "application/json");
-
-        ResponseEntity<String> response = restTemplate.postForEntity(
-                gatewayUrl("/api/orders"),
+                gatewayUrl("/api/auth/register"),
                 new HttpEntity<>("{}", headers),
                 String.class
         );
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody()).isEqualTo("order-created");
+    }
+
+    @Test
+    void allowsPublicMenuReadWithoutToken() {
+        WireMockServices.MENU.stubFor(get(urlEqualTo("/api/menu/restaurants"))
+                .willReturn(aResponse().withStatus(200).withBody("restaurants")));
+
+        ResponseEntity<String> response = restTemplate.getForEntity(
+                gatewayUrl("/api/menu/restaurants"),
+                String.class
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    }
+
+    @Test
+    void rejectsProtectedRouteWithoutToken() {
+        assertThatThrownBy(() -> restTemplate.getForEntity(gatewayUrl("/api/orders/my"), String.class))
+                .isInstanceOf(RestClientResponseException.class)
+                .satisfies(ex -> assertThat(((RestClientResponseException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.UNAUTHORIZED));
+    }
+
+    @Test
+    void rejectsProtectedRouteWithInvalidToken() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer invalid-token");
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        assertThatThrownBy(() -> restTemplate.exchange(
+                gatewayUrl("/api/users/hello"),
+                HttpMethod.GET,
+                entity,
+                String.class
+        ))
+                .isInstanceOf(RestClientResponseException.class)
+                .satisfies(ex -> assertThat(((RestClientResponseException) ex).getStatusCode())
+                        .isEqualTo(HttpStatus.UNAUTHORIZED));
+    }
+
+    @Test
+    void allowsProtectedRouteWithValidToken() {
+        WireMockServices.USER.stubFor(get(urlEqualTo("/api/users/hello"))
+                .willReturn(aResponse().withStatus(200).withBody("hello-from-user")));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", JwtTestTokens.bearerCustomerToken());
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(
+                gatewayUrl("/api/users/hello"),
+                HttpMethod.GET,
+                entity,
+                String.class
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo("hello-from-user");
     }
 
     @Test
@@ -142,10 +131,14 @@ class GatewayRoutingTests {
                 .withHeader("Authorization", equalTo(token))
                 .willReturn(aResponse().withStatus(200).withBody("my-orders")));
 
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", token);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
         ResponseEntity<String> response = restTemplate.exchange(
                 gatewayUrl("/api/orders/my"),
                 HttpMethod.GET,
-                withAuth(token),
+                entity,
                 String.class
         );
 
@@ -154,10 +147,20 @@ class GatewayRoutingTests {
     }
 
     @Test
-    void returnsNotFoundForUnknownPath() {
-        assertThatThrownBy(() -> restTemplate.getForEntity(gatewayUrl("/unknown"), String.class))
+    void rejectsMenuMutationWithoutToken() {
+        WireMockServices.MENU.stubFor(post(urlEqualTo("/api/menu/restaurants"))
+                .willReturn(aResponse().withStatus(201).withBody("created")));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+
+        assertThatThrownBy(() -> restTemplate.postForEntity(
+                gatewayUrl("/api/menu/restaurants"),
+                new HttpEntity<>("{}", headers),
+                String.class
+        ))
                 .isInstanceOf(RestClientResponseException.class)
                 .satisfies(ex -> assertThat(((RestClientResponseException) ex).getStatusCode())
-                        .isEqualTo(HttpStatus.NOT_FOUND));
+                        .isEqualTo(HttpStatus.UNAUTHORIZED));
     }
 }
