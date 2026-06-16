@@ -16,6 +16,8 @@ public class OrderResponse {
 
     private Long id;
 
+    private Long userId;
+
     private String username;
 
     private Long restaurantId;
