@@ -21,7 +21,7 @@ import io.jsonwebtoken.Jwts;
 
 @Component
 public class JwtService {
-    @Value("${JWT_SECRET}")
+    @Value("${JWT_SECRET:5367566859703373367639792F423F452848284D6251655468576D5A71347437}")
     public String secret;
     @Autowired
     private UserRepository userRepository;
