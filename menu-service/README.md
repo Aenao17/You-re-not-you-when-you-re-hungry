@@ -2,8 +2,6 @@
 
 Manages the restaurant catalogue and menu items. Public read access allows any client to browse restaurants and their menus without authentication; write operations are restricted to administrators.
 
----
-
 ## Purpose
 
 - Create, update, and delete restaurants
@@ -11,12 +9,10 @@ Manages the restaurant catalogue and menu items. Public read access allows any c
 - Allow any client (authenticated or not) to list restaurants, search by keyword, and view menu items
 - Expose restaurant data to `order-service` for order validation and price snapshotting
 
----
-
 ## Technologies
 
 | Technology | Version | Purpose |
-|---|---|---|
+
 | Java | 17 | Language |
 | Spring Boot | 4.0.6 | Application framework |
 | Spring Security | (Boot managed) | JWT validation, method-level authorisation |
@@ -27,8 +23,6 @@ Manages the restaurant catalogue and menu items. Public read access allows any c
 | SpringDoc OpenAPI | 2.3.0 | Swagger UI / API documentation |
 | Lombok | (Boot managed) | Boilerplate reduction |
 | Docker | — | Containerisation |
-
----
 
 ## How to Run
 
@@ -42,31 +36,25 @@ Manages the restaurant catalogue and menu items. Public read access allows any c
 
 Spring Boot Docker Compose support automatically starts a PostgreSQL 16 container on port **5434**.
 
-```bash
 cd menu-service
 ./mvnw spring-boot:run
-```
 
 The service starts on **http://localhost:8082**.
 
 ### Run with Docker Compose
 
-```bash
 cd menu-service
 docker compose up --build
-```
 
 This starts both `menu-service-database` (PostgreSQL) and `menu-service-app`.
 
 ### Environment variables
 
 | Variable | Default | Description |
-|---|---|---|
+
 | `SPRING_DATASOURCE_URL` | `jdbc:postgresql://localhost:5434/menu_db` | JDBC URL |
 | `SPRING_DATASOURCE_USERNAME` | `menu` | DB username |
 | `SPRING_DATASOURCE_PASSWORD` | `password` | DB password |
-
----
 
 ## API Endpoints
 
@@ -75,7 +63,7 @@ All endpoints are also available via the **API Gateway** at `http://localhost:80
 ### Restaurants — `/api/menu/restaurants`
 
 | Method | Path | Auth | Description |
-|---|---|---|---|
+
 | `GET` | `/api/menu/restaurants` | Public | List all restaurants (with their menu items) |
 | `GET` | `/api/menu/restaurants/{id}` | Public | Get a restaurant by ID |
 | `GET` | `/api/menu/restaurants/search?keyword=` | Public | Search restaurants by name keyword |
@@ -85,29 +73,24 @@ All endpoints are also available via the **API Gateway** at `http://localhost:80
 
 #### `POST /api/menu/restaurants` — request body
 
-```json
 {
-  "name": "Pasta Palace",
-  "description": "Authentic Italian pasta dishes made fresh daily."
+"name": "Pasta Palace",
+"description": "Authentic Italian pasta dishes made fresh daily."
 }
-```
 
 **Response `201 Created`:**
-```json
-{
-  "restaurantId": 3,
-  "name": "Pasta Palace",
-  "description": "Authentic Italian pasta dishes made fresh daily.",
-  "menuItems": []
-}
-```
 
----
+{
+"restaurantId": 3,
+"name": "Pasta Palace",
+"description": "Authentic Italian pasta dishes made fresh daily.",
+"menuItems": []
+}
 
 ### Menu Items — `/api/menu/...`
 
 | Method | Path | Auth | Description |
-|---|---|---|---|
+
 | `GET` | `/api/menu/items/{itemId}` | Public | Get a single menu item by ID |
 | `POST` | `/api/menu/restaurants/{restaurantId}/items` | ADMIN | Add a menu item to a restaurant |
 | `PUT` | `/api/menu/items/{itemId}` | ADMIN | Update a menu item |
@@ -115,23 +98,18 @@ All endpoints are also available via the **API Gateway** at `http://localhost:80
 
 #### `POST /api/menu/restaurants/{restaurantId}/items` — request body
 
-```json
 {
-  "name": "Margherita Pizza",
-  "price": 32.50
+"name": "Margherita Pizza",
+"price": 32.50
 }
-```
 
 **Response `201 Created`:**
-```json
-{
-  "id": 5,
-  "name": "Margherita Pizza",
-  "price": 32.50
-}
-```
 
----
+{
+"id": 5,
+"name": "Margherita Pizza",
+"price": 32.50
+}
 
 ## Swagger UI
 
@@ -139,14 +117,12 @@ All endpoints are also available via the **API Gateway** at `http://localhost:80
 
 The full interactive API documentation is available here while the service is running.
 
----
-
 ## Data Model
 
 ### `Restaurant` entity (`restaurants` table)
 
 | Field | Type | Notes |
-|---|---|---|
+
 | `restaurantId` | `Long` | Auto-generated primary key |
 | `name` | `String` | Not blank |
 | `description` | `String` | Up to 500 characters |
@@ -155,13 +131,11 @@ The full interactive API documentation is available here while the service is ru
 ### `MenuItem` entity (`menu_items` table)
 
 | Field | Type | Notes |
-|---|---|---|
+
 | `id` | `Long` | Auto-generated primary key |
 | `name` | `String` | Not blank |
 | `price` | `BigDecimal` | Must be positive |
 | `restaurant` | `Restaurant` | Many-to-one relationship |
-
----
 
 ## Main Business Rules
 
@@ -170,5 +144,5 @@ The full interactive API documentation is available here while the service is ru
 3. **Cascading deletes** — deleting a restaurant removes all its menu items.
 4. **Price snapshotting** — when `order-service` creates an order it reads menu item prices from this service and stores them in the order. Subsequent price changes do not affect existing orders.
 5. **Pre-seeded data** is loaded on first startup if no restaurants exist:
-   - *Demo Italian Restaurant* — Spaghetti Carbonara, Tiramisu, Caesar Salad
-   - *Burger House* — Classic Cheeseburger, BBQ Bacon Burger, Veggie Burger, French Fries
+   - _Demo Italian Restaurant_ — Spaghetti Carbonara, Tiramisu, Caesar Salad
+   - _Burger House_ — Classic Cheeseburger, BBQ Bacon Burger, Veggie Burger, French Fries

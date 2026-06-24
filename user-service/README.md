@@ -2,8 +2,6 @@
 
 Handles user registration, authentication, and account management for the food-ordering system. It is the sole issuer of JWT tokens consumed by all other services.
 
----
-
 ## Purpose
 
 - Register new users (always assigned the `CUSTOMER` role)
@@ -12,12 +10,10 @@ Handles user registration, authentication, and account management for the food-o
 - Expose admin-only endpoints for listing and retrieving users
 - Expose an internal endpoint used by `order-service` to look up users by username
 
----
-
 ## Technologies
 
 | Technology | Version | Purpose |
-|---|---|---|
+
 | Java | 17 | Language |
 | Spring Boot | 4.0.6 | Application framework |
 | Spring Security | (Boot managed) | Authentication, authorisation, password hashing |
@@ -27,8 +23,6 @@ Handles user registration, authentication, and account management for the food-o
 | SpringDoc OpenAPI | 2.8.6 | Swagger UI / API documentation |
 | Lombok | (Boot managed) | Boilerplate reduction |
 | Docker | — | Containerisation |
-
----
 
 ## How to Run
 
@@ -42,32 +36,26 @@ Handles user registration, authentication, and account management for the food-o
 
 Spring Boot Docker Compose support automatically starts a PostgreSQL 16 container on port **5433**.
 
-```bash
 cd user-service
 ./mvnw spring-boot:run
-```
 
 The service starts on **http://localhost:8081**.
 
 ### Run with Docker Compose
 
-```bash
 cd user-service
 docker compose up --build
-```
 
 This starts both `user-service-database` (PostgreSQL) and `user-service-app`.
 
 ### Environment variables
 
 | Variable | Default | Description |
-|---|---|---|
+
 | `SPRING_DATASOURCE_URL` | `jdbc:postgresql://localhost:5433/user_db` | JDBC URL |
 | `SPRING_DATASOURCE_USERNAME` | `user` | DB username |
 | `SPRING_DATASOURCE_PASSWORD` | `password` | DB password |
-| `JWT_SECRET` | *(hardcoded Base64 value)* | HS256 signing key |
-
----
+| `JWT_SECRET` | _(hardcoded Base64 value)_ | HS256 signing key |
 
 ## API Endpoints
 
@@ -76,99 +64,86 @@ All endpoints are also available via the **API Gateway** at `http://localhost:80
 ### Auth — `/api/auth`
 
 | Method | Path | Auth | Description |
-|---|---|---|---|
+
 | `POST` | `/api/auth/register` | Public | Register a new user |
 | `POST` | `/api/auth/login` | Public | Authenticate and receive a JWT |
 
 #### `POST /api/auth/register`
 
 **Request body:**
-```json
+
 {
-  "username": "alice",
-  "password": "pass1234",
-  "email": "alice@example.com",
-  "firstName": "Alice",
-  "lastName": "Smith",
-  "phoneNumber": "+40700000000"
+"username": "alice",
+"password": "pass1234",
+"email": "alice@example.com",
+"firstName": "Alice",
+"lastName": "Smith",
+"phoneNumber": "+40700000000"
 }
-```
 
 **Response `201 Created`:**
-```json
+
 {
-  "id": 4,
-  "username": "alice",
-  "email": "alice@example.com",
-  "firstName": "Alice",
-  "lastName": "Smith",
-  "phoneNumber": "+40700000000",
-  "role": "CUSTOMER"
+"id": 4,
+"username": "alice",
+"email": "alice@example.com",
+"firstName": "Alice",
+"lastName": "Smith",
+"phoneNumber": "+40700000000",
+"role": "CUSTOMER"
 }
-```
 
 #### `POST /api/auth/login`
 
 **Request body:**
-```json
+
 {
-  "username": "alice",
-  "password": "pass1234"
+"username": "alice",
+"password": "pass1234"
 }
-```
 
 **Response `200 OK`:**
-```json
-{
-  "accessToken": "<jwt>",
-  "tokenType": "Bearer"
-}
-```
 
----
+{
+"accessToken": "<jwt>",
+"tokenType": "Bearer"
+}
 
 ### Users — `/api/users`
 
 Requires a valid JWT (`ROLE_CUSTOMER` or `ROLE_ADMIN`).
 
 | Method | Path | Auth | Description |
-|---|---|---|---|
+
 | `GET` | `/api/users/me` | Authenticated | Get the currently logged-in user's profile |
 | `GET` | `/api/users/hello` | Authenticated | Health-check greeting |
-
----
 
 ### Admin — `/api/admin`
 
 Requires `ROLE_ADMIN`.
 
 | Method | Path | Auth | Description |
-|---|---|---|---|
+
 | `GET` | `/api/admin/users` | ADMIN | List all users |
 | `GET` | `/api/admin/users/{id}` | ADMIN | Get a user by ID |
 | `GET` | `/api/admin/users/username/{username}` | ADMIN | Get a user by username |
-
----
 
 ### Internal — `/api/internal/users`
 
 Not routed through the API Gateway. Used only by `order-service`.
 
 | Method | Path | Auth | Description |
-|---|---|---|---|
+
 | `GET` | `/api/internal/users/{username}` | None | Return a lightweight user summary |
 
 **Response:**
-```json
-{
-  "id": 3,
-  "username": "customer1",
-  "email": "customer1@example.com",
-  "role": "ROLE_CUSTOMER"
-}
-```
 
----
+{
+"id": 3,
+"username": "customer1",
+"email": "customer1@example.com",
+"role": "ROLE_CUSTOMER"
+}
 
 ## Swagger UI
 
@@ -176,14 +151,12 @@ Not routed through the API Gateway. Used only by `order-service`.
 
 The full interactive API documentation is available here while the service is running.
 
----
-
 ## Data Model
 
 ### `User` entity (`users` table)
 
 | Field | Type | Notes |
-|---|---|---|
+
 | `id` | `Long` | Auto-generated primary key |
 | `username` | `String` | Unique |
 | `password` | `String` | BCrypt-hashed |
@@ -194,8 +167,6 @@ The full interactive API documentation is available here while the service is ru
 | `role` | `Role` | Enum: `CUSTOMER`, `ADMIN` |
 | `createdAt` | `LocalDateTime` | Set on creation |
 | `updatedAt` | `LocalDateTime` | Updated on save |
-
----
 
 ## Main Business Rules
 
