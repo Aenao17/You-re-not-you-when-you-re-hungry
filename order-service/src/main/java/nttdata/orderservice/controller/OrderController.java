@@ -1,8 +1,10 @@
 package nttdata.orderservice.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import nttdata.orderservice.dto.request.CreateOrderRequest;
@@ -20,6 +22,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
+@Tag(name = "Orders", description = "Place and manage food orders — customers manage their own orders, admins manage all orders")
 public class OrderController {
 
     private final OrderService orderService;
@@ -70,6 +73,7 @@ public class OrderController {
     @GetMapping("/{orderId}")
     @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
     public ResponseEntity<OrderResponse> getOrderById(
+            @Parameter(description = "Numeric order ID", required = true)
             @PathVariable Long orderId,
             Authentication authentication
     ) {
@@ -104,6 +108,7 @@ public class OrderController {
     @PatchMapping("/{orderId}/status")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<OrderResponse> updateOrderStatus(
+            @Parameter(description = "Numeric order ID", required = true)
             @PathVariable Long orderId,
             @Valid @RequestBody UpdateOrderStatusRequest request
     ) {
@@ -123,6 +128,7 @@ public class OrderController {
     @PatchMapping("/{orderId}/cancel")
     @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
     public ResponseEntity<OrderResponse> cancelOrder(
+            @Parameter(description = "Numeric order ID", required = true)
             @PathVariable Long orderId,
             Authentication authentication
     ) {
